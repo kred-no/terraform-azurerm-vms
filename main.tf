@@ -1,13 +1,7 @@
-/*resource "random_id" "X" {
-  keepers = {
-    name = var.resource_group.name
-  }
-
-  byte_length = 3
-}*/
+data "azurerm_client_config" "CURRENT" {}
 
 ////////////////////////
-// External | Virtual Network
+// Virtual Network
 ////////////////////////
 
 data "azurerm_virtual_network" "MAIN" {
@@ -16,7 +10,7 @@ data "azurerm_virtual_network" "MAIN" {
 }
 
 ////////////////////////
-// Resources Group
+// Resource Group (Compute)
 ////////////////////////
 
 resource "azurerm_resource_group" "MAIN" {
@@ -61,6 +55,32 @@ data "azurerm_subnet" "MAIN" {
 }
 
 ////////////////////////
+// Azure Key Vault
+////////////////////////
+
+resource "azurerm_key_vault" "MAIN" {
+  count = 0
+  
+  name     = join("-", [var.prefix, "kv"])
+  sku_name = "standard"
+  
+  soft_delete_retention_days  = 7
+  purge_protection_enabled    = false
+  enabled_for_disk_encryption = true
+  
+  access_policy {
+    tenant_id = data.azurerm_client_config.CURRENT.tenant_id
+    object_id = data.azurerm_client_config.CURRENT.object_id
+    secret_permissions = ["Get"]
+  }
+
+  tags                = var.tags
+  tenant_id           = data.azurerm_client_config.CURRENT.tenant_id
+  location            = data.azurerm_resource_group.MAIN.location
+  resource_group_name = data.azurerm_resource_group.MAIN.name
+}
+
+////////////////////////
 // Network Security
 ////////////////////////
 
@@ -99,7 +119,7 @@ resource "azurerm_application_security_group" "MAIN" {
 
   tags = var.tags
   location            = data.azurerm_virtual_network.MAIN.location
-  resource_group_name = data.azurerm_virtual_network.MAIN.name
+  resource_group_name = data.azurerm_virtual_network.MAIN.resource_group_name
 }
 
 resource "azurerm_network_interface" "MAIN" {
@@ -143,6 +163,10 @@ resource "azurerm_windows_virtual_machine" "MAIN" {
     azurerm_network_interface.MAIN[count.index].id,
   ]
 
+  identity {
+    type = "SystemAssigned"
+  }
+
   os_disk {
     caching              = "ReadWrite"
     storage_account_type = "Standard_LRS"
@@ -155,6 +179,7 @@ resource "azurerm_windows_virtual_machine" "MAIN" {
     version   = var.source_image_windows.version
   }
 
+  tags                = var.tags
   resource_group_name = data.azurerm_resource_group.MAIN.name
   location            = data.azurerm_resource_group.MAIN.location
 }
@@ -177,6 +202,10 @@ resource "azurerm_linux_virtual_machine" "MAIN" {
     azurerm_network_interface.MAIN[count.index].id,
   ]
 
+  identity {
+    type = "SystemAssigned"
+  }
+
   os_disk {
     caching              = "ReadWrite"
     storage_account_type = "Standard_LRS"
@@ -189,6 +218,7 @@ resource "azurerm_linux_virtual_machine" "MAIN" {
     version   = var.source_image_linux.version
   }
 
+  tags                = var.tags
   resource_group_name = data.azurerm_resource_group.MAIN.name
   location            = data.azurerm_resource_group.MAIN.location
 }

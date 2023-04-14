@@ -1,4 +1,5 @@
 **/.terraform/*
+**/.state/*
 
 *.tfstate
 *.tfstate.*

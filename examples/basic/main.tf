@@ -1,14 +1,18 @@
-//////////////////////////////////
-// Customization
-//////////////////////////////////
+////////////////////////
+// Configuration
+////////////////////////
 
 locals {
-  rg_prefix   = "tfvm"
+  rg_prefix   = "tf-vms"
   rg_location = "northeurope"
 
   vnet_name          = "x-virtual-network"
   vnet_address_space = ["192.168.168.0/24"]
 }
+
+////////////////////////
+// Resources
+////////////////////////
 
 resource "random_id" "X" {
   keepers = {
@@ -17,10 +21,6 @@ resource "random_id" "X" {
 
   byte_length = 3
 }
-
-//////////////////////////////////
-// Virtual Network Resources
-//////////////////////////////////
 
 resource "azurerm_resource_group" "MAIN" {
   name     = join("-", [random_id.X.keepers.prefix, "VNet", random_id.X.hex])
@@ -35,9 +35,9 @@ resource "azurerm_virtual_network" "MAIN" {
   location            = azurerm_resource_group.MAIN.location
 }
 
-//////////////////////////////////
-// Module
-//////////////////////////////////
+////////////////////////
+// Module | Linux
+////////////////////////
 
 module "LINUX_VM" {
   source = "../../../terraform-azurerm-vms"
@@ -53,6 +53,10 @@ module "LINUX_VM" {
   resource_group  = azurerm_resource_group.MAIN
   virtual_network = azurerm_virtual_network.MAIN
 }
+
+////////////////////////
+// Module | Windows
+////////////////////////
 
 module "WINDOWS_VM" {
   source = "../../../terraform-azurerm-vms"
