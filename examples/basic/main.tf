@@ -6,6 +6,9 @@ locals {
   prefix   = "tfvms"
   location = "northeurope"
 
+  linux_instances   = 1
+  windows_instances = 1
+
   vnet_name   = "DemoVirtualNetwork"
   subnet_name = "ExampleVmSubnet"
 
@@ -53,6 +56,7 @@ resource "azurerm_subnet" "MAIN" {
 
 module "LINUX_VM" {
   source = "../../../terraform-azurerm-vms"
+  count = local.linux_instances
 
   depends_on = [
     azurerm_resource_group.MAIN,
@@ -70,12 +74,12 @@ module "LINUX_VM" {
 
 output "LINUX_appid" {
   sensitive = false
-  value     = one(module.LINUX_VM[*].application_security_group.id)
+  value     = module.LINUX_VM[*].application_security_group.id
 }
 
 output "LINUX_nic" {
   sensitive = false
-  value     = one(module.LINUX_VM[*].network_interface.0.name)
+  value     = module.LINUX_VM[*].network_interface.0.name
 }
 
 ////////////////////////
@@ -84,6 +88,7 @@ output "LINUX_nic" {
 
 module "WINDOWS_VM" {
   source = "../../../terraform-azurerm-vms"
+  count = local.windows_instances
 
   // Overrides
   vm_prefix  = "win"
@@ -97,10 +102,10 @@ module "WINDOWS_VM" {
 
 output "WINDOWS_appid" {
   sensitive = false
-  value     = one(module.WINDOWS_VM[*].application_security_group.id)
+  value     = module.WINDOWS_VM[*].application_security_group.id
 }
 
 output "WINDOWS_nic" {
   sensitive = false
-  value     = one(module.WINDOWS_VM[*].network_interface.0.name)
+  value     = module.WINDOWS_VM[*].network_interface.0.name
 }
