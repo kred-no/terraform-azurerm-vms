@@ -154,3 +154,78 @@ resource "azurerm_linux_virtual_machine" "MAIN" {
   resource_group_name = data.azurerm_resource_group.MAIN.name
   location            = data.azurerm_resource_group.MAIN.location
 }
+
+////////////////////////
+// VM Extension | BG Info
+////////////////////////
+
+resource "azurerm_virtual_machine_extension" "BGINFO" {
+  count = alltrue([
+    upper(var.vm_os_type) != "LINUX",
+    var.vm_bginfo.enabled,
+  ]) ? var.vm_count : 0
+
+  name      = "BGInfo"
+  publisher = "Microsoft.Compute"
+  type      = "BGInfo"
+
+  type_handler_version       = var.vm_bginfo.type_handler_version
+  auto_upgrade_minor_version = var.vm_bginfo.auto_upgrade_minor_version
+  automatic_upgrade_enabled  = var.vm_bginfo.automatic_upgrade_enabled
+
+  tags               = var.tags
+  virtual_machine_id = azurerm_windows_virtual_machine.MAIN[count.index].id
+
+  lifecycle {
+    ignore_changes = []
+  }
+}
+
+////////////////////////
+// VM Extension | AAD Login
+////////////////////////
+
+resource "azurerm_virtual_machine_extension" "AADLOGIN_WINDOWS" {
+  count = alltrue([
+    upper(var.vm_os_type) != "LINUX",
+    var.vm_aadlogin.enabled
+  ]) ? var.vm_count : 0
+
+  name      = "AADLogin"
+  publisher = "Microsoft.Azure.ActiveDirectory"
+  type      = "AADLoginForWindows"
+
+  type_handler_version       = var.vm_aadlogin.type_handler_version
+  auto_upgrade_minor_version = var.vm_aadlogin.auto_upgrade_minor_version
+  automatic_upgrade_enabled  = var.vm_aadlogin.automatic_upgrade_enabled
+
+  tags               = var.tags
+  virtual_machine_id = azurerm_windows_virtual_machine.MAIN[count.index].id
+
+  lifecycle {
+    ignore_changes = [settings, protected_settings]
+  }
+}
+
+resource "azurerm_virtual_machine_extension" "AADLOGIN_LINUX" {
+  count = alltrue([
+    upper(var.vm_os_type) != "WINDOWS",
+    var.vm_aadlogin.enabled
+  ]) ? var.vm_count : 0
+
+  name      = "AADLogin"
+  publisher = "Microsoft.Azure.ActiveDirectory"
+  type      = "AADLoginForLinux"
+
+  type_handler_version       = var.vm_aadlogin.type_handler_version
+  auto_upgrade_minor_version = var.vm_aadlogin.auto_upgrade_minor_version
+  automatic_upgrade_enabled  = var.vm_aadlogin.automatic_upgrade_enabled
+
+  tags               = var.tags
+  virtual_machine_id = azurerm_linux_virtual_machine.MAIN[count.index].id
+
+  lifecycle {
+    ignore_changes = [settings, protected_settings]
+  }
+}
+

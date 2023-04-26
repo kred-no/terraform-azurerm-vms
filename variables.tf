@@ -124,3 +124,41 @@ variable "admin_ssh_keys" {
 
   default = []
 }
+
+////////////////////////
+// Extensions
+////////////////////////
+
+variable "vm_bginfo" {
+  description = "az vm extension image list -o table --name BGInfo --publisher Microsoft.Compute --location <location>"
+
+  type = object({
+    enabled                    = optional(bool, true)
+    type_handler_version       = optional(string, "2.2")
+    auto_upgrade_minor_version = optional(bool, true)
+    automatic_upgrade_enabled  = optional(bool, false)
+  })
+
+  default = {}
+}
+
+variable "vm_aadlogin" {
+  description = <<-HEREDOC
+  This extension joins the VMs to Azure AD.
+
+  This extension works for Windows Server 2022, Windows 10/11 & Linux devices.
+  Seems to stop working if RG name is above 15 characters.
+  
+  > az vm extension image list -o table --name AADLoginForWindows --publisher Microsoft.Azure.ActiveDirectory --location <location>
+  HEREDOC
+
+  type = object({
+    enabled                    = optional(bool, false)
+    type_handler_version       = optional(string, "2.0")
+    auto_upgrade_minor_version = optional(bool, true)
+    automatic_upgrade_enabled  = optional(bool, false)
+  })
+
+  default = {}
+}
+
