@@ -1,21 +1,6 @@
 ////////////////////////
-// Core Resources
+// Resources
 ////////////////////////
-
-variable "resource_group" {
-  type = object({
-    create   = optional(bool, false)
-    name     = string
-    location = string
-  })
-}
-
-variable "virtual_network" {
-  type = object({
-    name                = string
-    resource_group_name = string
-  })
-}
 
 variable "tags" {
   type    = map(string)
@@ -26,16 +11,19 @@ variable "tags" {
 // Subnet
 ////////////////////////
 
+variable "resource_group" {
+  type = object({
+    name     = string
+    location = string
+  })
+}
+
 variable "subnet" {
   type = object({
-    create     = optional(bool, true)
-    name       = optional(string, "VirtualMachines")
-    vnet_index = optional(number, 0)
-    newbits    = optional(number, 8)
-    netnum     = optional(number, 0)
+    name                 = string
+    resource_group_name  = string
+    virtual_network_name = string
   })
-  
-  default = {}
 }
 
 ////////////////////////
@@ -44,13 +32,13 @@ variable "subnet" {
 
 variable "nsg_rules" {
   description = "Create Network Security Group if there is at least 1 rule defined."
-  
+
   type = list(object({
     name     = string
     priority = number
     // TODO ..
   }))
-  
+
   default = []
 }
 
@@ -58,7 +46,7 @@ variable "nsg_rules" {
 // Virtual Machine
 ////////////////////////
 
-variable "prefix" {
+variable "vm_prefix" {
   type    = string
   default = "vm"
 }
@@ -76,11 +64,16 @@ variable "vm_size" {
 variable "vm_os_type" {
   type    = string
   default = "Windows"
-  
+
   validation {
     condition     = contains(["Windows", "Linux"], var.vm_os_type)
     error_message = "Supported: 'Linux', 'Windows'"
   }
+}
+
+variable "source_image_id" {
+  type    = string
+  default = null
 }
 
 variable "source_image_windows" {
@@ -113,4 +106,21 @@ variable "source_image_linux" {
     sku       = "16.04-LTS"
     version   = "latest"
   }
+}
+
+variable "admin_username" {
+  type    = string
+  default = "AdminUser"
+}
+
+variable "admin_password" {
+  type    = string
+  default = "P@$$w0rdL3ss!"
+}
+
+variable "admin_ssh_keys" {
+  description = "Linux Only."
+  type        = list(string)
+
+  default = []
 }
