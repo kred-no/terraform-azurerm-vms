@@ -56,7 +56,7 @@ resource "azurerm_subnet" "MAIN" {
 
 module "LINUX_VM" {
   source = "../../../terraform-azurerm-vms"
-  count = local.linux_instances
+  count  = local.linux_instances
 
   depends_on = [
     azurerm_resource_group.MAIN,
@@ -88,12 +88,26 @@ output "LINUX_nic" {
 
 module "WINDOWS_VM" {
   source = "../../../terraform-azurerm-vms"
-  count = local.windows_instances
+  count  = local.windows_instances
 
   // Overrides
   vm_prefix  = "win"
   vm_os_type = "Windows"
 
+  automation_schedules = [{
+    name = "ExampleSchedule"
+  }]
+
+  automation_runbooks = [{
+    name         = "ExampleRunbook"
+    runbook_type = "PowerShell"
+    content      = "Write-Host 'Hello!'"
+  }]
+
+  automation_job_schedules = [{
+    runbook_name  = "ExampleRunbook"
+    schedule_name = "ExampleSchedule"
+  }]
 
   // External Resource References
   subnet         = azurerm_subnet.MAIN

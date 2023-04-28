@@ -162,3 +162,66 @@ variable "vm_aadlogin" {
   default = {}
 }
 
+////////////////////////
+// Automation
+////////////////////////
+
+variable "automation_account_sku" {
+  type    = string
+  default = "Basic"
+}
+
+variable "automation_schedules" {
+  type = list(object({
+    name        = string
+    description = optional(string)
+    frequency   = optional(string, "Week")
+    interval    = optional(number, 1)
+    timezone    = optional(string) # Europe/Oslo
+    start_time  = optional(string)
+    expiry_time = optional(string)
+    week_days   = optional(list(string))
+    month_days  = optional(list(string))
+
+    monthly_occurrence = optional(list(object({
+      day        = string
+      occurrence = number
+    })), [])
+  }))
+
+  default = []
+}
+
+variable "automation_runbooks" {
+  type = list(object({
+    name         = string
+    description  = optional(string)
+    runbook_type = string
+    log_verbose  = optional(bool, true)
+    log_progress = optional(bool, true)
+    content      = optional(string)
+
+    publish_content_link = optional(list(object({
+      uri     = string
+      version = optional(string)
+
+      hash = optional(object({
+        algorithm = optional(string)
+        value     = optional(string)
+      }))
+    })), [])
+  }))
+
+  default = []
+}
+
+variable "automation_job_schedules" {
+  type = list(object({
+    runbook_name  = string
+    schedule_name = string
+    parameters    = optional(map(string))
+    run_on        = optional(string)
+  }))
+
+  default = []
+}

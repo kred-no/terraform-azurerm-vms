@@ -229,3 +229,136 @@ resource "azurerm_virtual_machine_extension" "AADLOGIN_LINUX" {
   }
 }
 
+////////////////////////
+// Test | Shutdown Schedule
+////////////////////////
+
+/*variable "vm_shutdown_schedule" {
+  type = object({
+    enabled               = optional(bool, true)
+    timezone              = optional(string, "W. Europe Standard Time")
+    daily_recurrence_time = optional(string, "1800")
+    
+    notification_settings = optional(object({
+      enabled         = optional(bool, false)
+      email           = optional(string)
+      time_in_minutes = optional(number)
+      webhook_url     = optional(string)
+    }), {})
+  })
+  
+  default = null
+}
+
+resource "azurerm_dev_test_global_vm_shutdown_schedule" "MAIN" {
+  for_each = {
+    for vm in azurerm_linux_virtual_machine.MAIN: vm.name => vm
+    if var.vm_shutdown_schedule.enabled
+  }
+  
+  enabled               = var.vm_shutdown_schedule.enabled
+  daily_recurrence_time = "1700"
+  timezone              = "Pacific Standard Time"
+
+  notification_settings {
+    enabled         = true
+    time_in_minutes = "60"
+    webhook_url     = "https://sample-webhook-url.example.com"
+  }
+  
+  tags = var.tags
+  virtual_machine_id = azurerm_linux_virtual_machine.MAIN[each.key].id
+  location           = data.azurerm_resource_group.MAIN.location
+}*/
+
+////////////////////////
+// Test | Automation Tasks
+////////////////////////
+
+resource "azurerm_automation_account" "MAIN" {
+  count = length(var.automation_account_sku) > 0 ? 1 : 0
+
+  name     = format("%s%s", var.vm_prefix, "automation-account")
+  sku_name = var.automation_account_sku
+
+  location            = data.azurerm_resource_group.MAIN.location
+  resource_group_name = data.azurerm_resource_group.MAIN.name
+}
+
+resource "azurerm_automation_schedule" "MAIN" {
+  for_each = {
+    for schedule in var.automation_schedules : schedule.name => schedule
+  }
+
+  name        = each.key
+  description = each.value["description"]
+  frequency   = each.value["frequency"]
+  interval    = each.value["interval"]
+  timezone    = each.value["timezone"]
+  start_time  = each.value["start_time"]
+  expiry_time = each.value["expiry_time"]
+  week_days   = each.value["week_days"]
+  month_days  = each.value["month_days"]
+
+  dynamic "monthly_occurrence" {
+    for_each = each.value["monthly_occurrence"]
+
+    content {
+      day        = monthly_occurrence.value["day"]
+      occurrence = monthly_occurrence.value["occurrence"]
+    }
+  }
+
+  automation_account_name = one(azurerm_automation_account.MAIN[*].name)
+  resource_group_name     = data.azurerm_resource_group.MAIN.name
+}
+
+resource "azurerm_automation_runbook" "MAIN" {
+  for_each = {
+    for runbook in var.automation_runbooks : runbook.name => runbook
+  }
+
+  name         = each.key
+  description  = each.value["description"]
+  log_verbose  = each.value["log_verbose"]
+  log_progress = each.value["log_progress"]
+  runbook_type = each.value["runbook_type"]
+  content      = each.value["content"]
+
+  dynamic "publish_content_link" {
+    for_each = each.value["publish_content_link"]
+
+    content {
+      uri     = publish_content_link.value["uri"]
+      version = publish_content_link.value["version"]
+
+      dynamic "hash" {
+        for_each = publish_content_link.value["hash"][*]
+
+        content {
+          algorithm = hash.value["algorithm"]
+          value     = hash.value["value"]
+        }
+      }
+    }
+  }
+
+  automation_account_name = one(azurerm_automation_account.MAIN[*].name)
+  location                = data.azurerm_resource_group.MAIN.location
+  resource_group_name     = data.azurerm_resource_group.MAIN.name
+}
+
+
+resource "azurerm_automation_job_schedule" "MAIN" {
+  for_each = {
+    for job in var.automation_job_schedules : format("%s-%s", job.runbook_name, job.schedule_name) => job
+  }
+
+  runbook_name = each.value["runbook_name"]
+  parameters   = each.value["parameters"]
+  run_on       = each.value["run_on"]
+
+  schedule_name           = azurerm_automation_schedule.MAIN[each.value["schedule_name"]].name
+  automation_account_name = one(azurerm_automation_account.MAIN[*].name)
+  resource_group_name     = data.azurerm_resource_group.MAIN.name
+}
