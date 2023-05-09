@@ -6,7 +6,7 @@ locals {
   prefix   = "tfvms"
   location = "northeurope"
 
-  linux_instances   = 1
+  linux_instances   = 0
   windows_instances = 1
 
   vnet_name   = "DemoVirtualNetwork"
@@ -73,12 +73,12 @@ module "LINUX_VM" {
 }
 
 output "LINUX_appid" {
-  sensitive = false
+  sensitive = true
   value     = module.LINUX_VM[*].application_security_group.id
 }
 
 output "LINUX_nic" {
-  sensitive = false
+  sensitive = true
   value     = module.LINUX_VM[*].network_interface.0.name
 }
 
@@ -91,10 +91,10 @@ module "WINDOWS_VM" {
   count  = local.windows_instances
 
   // Overrides
-  vm_prefix  = "win"
   vm_os_type = "Windows"
+  vm_prefix  = "win"
 
-  automation_schedules = [{
+  /*automation_schedules = [{
     name = "ExampleSchedule"
   }]
 
@@ -107,7 +107,7 @@ module "WINDOWS_VM" {
   automation_job_schedules = [{
     runbook_name  = "ExampleRunbook"
     schedule_name = "ExampleSchedule"
-  }]
+  }]*/
 
   // External Resource References
   subnet         = azurerm_subnet.MAIN
@@ -115,11 +115,16 @@ module "WINDOWS_VM" {
 }
 
 output "WINDOWS_appid" {
-  sensitive = false
+  sensitive = true
   value     = module.WINDOWS_VM[*].application_security_group.id
 }
 
 output "WINDOWS_nic" {
-  sensitive = false
+  sensitive = true
   value     = module.WINDOWS_VM[*].network_interface.0.name
+}
+
+output "WINDOWS_vm" {
+  sensitive = true
+  value     = module.WINDOWS_VM[*].virtual_machine
 }

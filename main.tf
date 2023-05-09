@@ -85,6 +85,8 @@ resource "azurerm_windows_virtual_machine" "MAIN" {
     storage_account_type = "Standard_LRS"
   }
 
+  source_image_id = var.source_image_id
+
   dynamic "source_image_reference" {
     for_each = var.source_image_id != null ? [] : var.source_image_windows[*]
 
